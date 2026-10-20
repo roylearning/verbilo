@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #0A0A0E;
+    color: #ffffff;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Custom Stroke & Shadows for Hormozi / Viral Reels Subtitles */
+.text-stroke-black {
+  -webkit-text-stroke: 4px #000000;
+  paint-order: stroke fill;
+}
+
+.text-stroke-subtle {
+  -webkit-text-stroke: 2px #000000;
+  paint-order: stroke fill;
+}
+
+/* Desktop Installed Editing Fonts */
+@font-face {
+  font-family: 'Akira Expanded';
+  src: url('/fonts/AkiraExpanded.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Basement Grotesque';
+  src: url('/fonts/BasementGrotesque-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Integral CF';
+  src: url('/fonts/IntegralCF-ExtraBold.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Uni Sans Heavy';
+  src: url('/fonts/UniSansHeavy.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SFProDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'AMS Kashi';
+  src: url('/fonts/AMSKashiRegular.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+.font-anton { font-family: 'Anton', 'Bebas Neue', sans-serif; }
+.font-bebas { font-family: 'Bebas Neue', sans-serif; }
+.font-akira { font-family: 'Akira Expanded', sans-serif; }
+.font-basement { font-family: 'Basement Grotesque', sans-serif; }
+.font-integral { font-family: 'Integral CF', sans-serif; }
+.font-unisans { font-family: 'Uni Sans Heavy', sans-serif; }
+.font-sfpro { font-family: 'SF Pro Display', -apple-system, sans-serif; }
+.font-amskashi { font-family: 'AMS Kashi', cursive, sans-serif; }
+.font-dmsans { font-family: 'DM Sans', sans-serif; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-greatvibes { font-family: 'Great Vibes', cursive; }
+.font-anek { font-family: 'Anek Latin', sans-serif; }
+.font-poppins { font-family: 'Poppins', sans-serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+
+/* Hindi & Devanagari Display Fonts */
+.font-mukta { font-family: 'Mukta', sans-serif; }
+.font-teko { font-family: 'Teko', sans-serif; }
+.font-rozha { font-family: 'Rozha One', serif; }
+.font-kalam { font-family: 'Kalam', cursive; }
+.font-ranga { font-family: 'Ranga', cursive; }
+.font-hind { font-family: 'Hind', sans-serif; }
+.font-yatra { font-family: 'Yatra One', display; }
+.font-noto-devanagari { font-family: 'Noto Sans Devanagari', sans-serif; }
+
+/* Viral Bengali Fonts */
+.font-hind-siliguri { font-family: 'Hind Siliguri', sans-serif; }
+.font-noto-serif-bengali { font-family: 'Noto Serif Bengali', serif; }
+.font-anek-bangla { font-family: 'Anek Bangla', sans-serif; }
+.font-galada { font-family: 'Galada', cursive; }
+.font-mina { font-family: 'Mina', sans-serif; }
+.font-atma { font-family: 'Atma', cursive; }
+.font-noto-bengali { font-family: 'Noto Sans Bengali', sans-serif; }
+
+/* 3D Chromatic Aberration for Illusion Style */
+.chromatic-3d {
+  text-shadow: -3px -1.5px 0px rgba(255, 0, 85, 0.95), 3px 1.5px 0px rgba(0, 240, 255, 0.95), 0 4px 14px rgba(0,0,0,0.9);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

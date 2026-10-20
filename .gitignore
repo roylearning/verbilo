@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+**/node_modules/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Build artifacts
+dist/
+**/dist/
+dist-ssr/
+build/
+
+# Uploads & Outputs (User files / temporary media)
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/outputs/*
+!backend/outputs/.gitkeep
+*.mp4
+*.wav
+*.m4a
+*.avi
+*.mov
+
+# Environment & Config
+.env
+.env.local
+*.log
+
+# Editor & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
