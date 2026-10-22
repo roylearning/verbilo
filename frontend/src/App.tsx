@@ -653,6 +653,7 @@ export default function App() {
   );
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [uploadedVideoId, setUploadedVideoId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(15);
@@ -714,7 +715,7 @@ export default function App() {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const res = await fetch('/api/health').catch(() => fetch('http://localhost:8000/api/health').catch(() => null));
+        const res = await fetch('/api/health').catch(() => fetch('http://127.0.0.1:8000/api/health').catch(() => null));
         if (res && res.ok) {
           setBackendConnected(true);
         } else {
@@ -815,6 +816,7 @@ export default function App() {
       const file = e.target.files[0];
       setUploadedFile(file);
       setUploadedFileName(file.name);
+      setUploadedVideoId(null);
       const url = URL.createObjectURL(file);
       setVideoSrc(url);
       setIsPlaying(false);
@@ -837,7 +839,7 @@ export default function App() {
         method: 'POST',
         body: formData,
       }).catch(() =>
-        fetch('http://localhost:8000/api/upload-and-transcribe', {
+        fetch('http://127.0.0.1:8000/api/upload-and-transcribe', {
           method: 'POST',
           body: formData,
         }).catch(() => null)
@@ -846,6 +848,9 @@ export default function App() {
       if (res && res.ok) {
         const data = await res.json();
         if (data.words && data.words.length > 0) {
+          if (data.video_id) {
+            setUploadedVideoId(data.video_id);
+          }
           // Check if any word was misclassified into Urdu/Arabic script
           const containsUrdu = data.words.some((w: WordItem) => isUrduArabic(w.word));
           if (containsUrdu) {
@@ -861,6 +866,9 @@ export default function App() {
             if (retryRes && retryRes.ok) {
               const retryData = await retryRes.json();
               setWords(retryData.words);
+              if (retryData.video_id) {
+                setUploadedVideoId(retryData.video_id);
+              }
               setDetectedLanguage('hi');
               setTranscriptionStatus(`✨ Faster-Whisper generated ${retryData.words.length} Hindi words!`);
               setTimeout(() => setTranscriptionStatus(''), 4500);
@@ -912,7 +920,7 @@ export default function App() {
     setTranscriptionStatus('🤖 Generating synchronized subtitles...');
     try {
       const res = await fetch(`/api/transcribe?language=${selectedLanguage}`).catch(() =>
-        fetch(`http://localhost:8000/api/transcribe?language=${selectedLanguage}`).catch(() => null)
+        fetch(`http://127.0.0.1:8000/api/transcribe?language=${selectedLanguage}`).catch(() => null)
       );
       if (res && res.ok) {
         const data = await res.json();
@@ -972,7 +980,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: fullText })
       }).catch(() =>
-        fetch('http://localhost:8000/api/transliterate-hindi', {
+        fetch('http://127.0.0.1:8000/api/transliterate-hindi', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: fullText })
@@ -1003,7 +1011,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: fullText })
       }).catch(() =>
-        fetch('http://localhost:8000/api/transliterate-hinglish', {
+        fetch('http://127.0.0.1:8000/api/transliterate-hinglish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: fullText })
@@ -1084,26 +1092,40 @@ export default function App() {
     }
     setIsRendering(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/render", {
+      const renderPayload = {
+        video_id: uploadedVideoId || undefined,
+        words: words,
+        font_name: primaryFont.replace(/'/g, "").split(",")[0].trim(),
+        font_size: fontSize,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        stroke: strokeLevel !== 'none',
+        chunk_size: wordsPerLine,
+        y_position: yPosition,
+        text_transform: textTransform,
+        aspect_ratio: aspectRatio
+      };
+
+      const res = await fetch("/api/render", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          words: words,
-          font_name: primaryFont.replace(/'/g, "").split(",")[0].trim(),
-          font_size: fontSize,
-          primary_color: primaryColor,
-          secondary_color: secondaryColor,
-          stroke: strokeLevel !== 'none',
-          chunk_size: wordsPerLine,
-          y_position: yPosition,
-          text_transform: textTransform,
-          aspect_ratio: aspectRatio
+        body: JSON.stringify(renderPayload)
+      }).catch(() =>
+        fetch("http://127.0.0.1:8000/api/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(renderPayload)
         })
-      });
+      );
+
       const data = await res.json();
       if (data.status === "success" && data.download_url) {
+        const relUrl = data.download_url.startsWith('/') ? data.download_url : `/${data.download_url}`;
+        const downloadUrl = data.download_url.startsWith('http')
+          ? data.download_url
+          : `http://127.0.0.1:8000${relUrl}`;
         const downloadLink = document.createElement("a");
-        downloadLink.href = `http://127.0.0.1:8000${data.download_url}`;
+        downloadLink.href = downloadUrl;
         downloadLink.download = data.filename || "verbilo_rendered.mp4";
         document.body.appendChild(downloadLink);
         downloadLink.click();

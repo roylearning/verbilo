@@ -140,11 +140,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     raw_text = raw_text.capitalize()
 
                 if idx == target_idx:
-                    # Highlighted active word: primary color + slight scale
-                    formatted_words.append(f"{{\\c{ass_primary}\\fscx112\\fscy112}}{raw_text}{{\\rMainWord}}")
+                    # Highlighted active word: primary color (or custom override) + slight scale
+                    active_color = hex_to_ass_color(w.get("customColor")) if w.get("customColor") else ass_primary
+                    formatted_words.append(f"{{\\c{active_color}\\fscx112\\fscy112}}{raw_text}{{\\rMainWord}}")
                 else:
-                    # Non-active word: secondary color
-                    formatted_words.append(f"{{\\c{ass_secondary}}}{raw_text}")
+                    # Non-active word: secondary color (or custom override)
+                    word_color = hex_to_ass_color(w.get("customColor")) if w.get("customColor") else ass_secondary
+                    formatted_words.append(f"{{\\c{word_color}}}{raw_text}")
 
             line_text = " ".join(formatted_words)
             events.append(
@@ -224,6 +226,8 @@ def render_captioned_video(
         vf_filters = []
         if (target_w, target_h) != (orig_w, orig_h) and aspect_ratio != "original":
             vf_filters.append(f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:color=black")
+        elif orig_w % 2 != 0 or orig_h % 2 != 0:
+            vf_filters.append("scale=trunc(iw/2)*2:trunc(ih/2)*2")
         vf_filters.append(f"ass='{escaped_ass_path}'")
 
         cmd = [

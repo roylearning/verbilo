@@ -1,25 +1,51 @@
 import os
+import sys
+
+# Ensure UTF-8 output encoding on Windows console for Hindi / Hinglish / emojis
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import shutil
 import uuid
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# Add the backend directory to Python path for imports to work properly
+# Add the backend and app directory to Python path for imports to work properly
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_current_dir)
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
 
-from transcriber import transcribe_media
-from hinglish_engine import (
-    transliterate_devanagari_to_hinglish,
-    transliterate_hinglish_to_devanagari,
-    enrich_with_emojis,
-    is_urdu_arabic,
-    convert_urdu_to_hindi,
-)
-from renderer import render_captioned_video
+# Import modules after setting up path with error handling
+try:
+    from app.transcriber import transcribe_media
+    from app.hinglish_engine import (
+        transliterate_devanagari_to_hinglish,
+        transliterate_hinglish_to_devanagari,
+        enrich_with_emojis,
+        is_urdu_arabic,
+        convert_urdu_to_hindi,
+    )
+    from app.renderer import render_captioned_video
+except ImportError:
+    from transcriber import transcribe_media
+    from hinglish_engine import (
+        transliterate_devanagari_to_hinglish,
+        transliterate_hinglish_to_devanagari,
+        enrich_with_emojis,
+        is_urdu_arabic,
+        convert_urdu_to_hindi,
+    )
+    from renderer import render_captioned_video
 
 app = FastAPI(title="Verbilo AI Engine API", description="AI Multilingual Auto-Caption API for Indian Creators")
 
@@ -31,17 +57,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = os.path.abspath("uploads")
-OUTPUT_DIR = os.path.abspath("outputs")
+UPLOAD_DIR = os.path.join(_parent_dir, "uploads")
+OUTPUT_DIR = os.path.join(_parent_dir, "outputs")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+# Mount the outputs directory for static file serving with error handling
+try:
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+except Exception as e:
+    print(f"Warning: Could not mount static files directory: {e}")
 
 class WordItem(BaseModel):
     word: str
     start: float
     end: float
+    customColor: Optional[str] = None
 
 class TranscribeResponse(BaseModel):
     status: str
@@ -123,6 +155,14 @@ def get_transcribe_sample(language: str = "hinglish"):
     words_data, detected_lang = transcribe_media("", language=language)
     return {"status": "success", "language": detected_lang or language, "words": words_data}
 
+@app.get("/outputs/{filename}")
+async def get_rendered_output(filename: str):
+    file_path = os.path.join(OUTPUT_DIR, filename)
+    if os.path.isfile(file_path):
+        from fastapi.responses import FileResponse
+        return FileResponse(file_path, media_type="video/mp4")
+    raise HTTPException(status_code=404, detail="File not found")
+
 @app.post("/api/render")
 def render_video_endpoint(req: RenderRequest):
     # Locate video file
@@ -133,13 +173,15 @@ def render_video_endpoint(req: RenderRequest):
                 video_path = os.path.join(UPLOAD_DIR, f)
                 break
 
-    # If not found or not specified, use any available video in uploads
+    # If not found or not specified, use the most recently uploaded video
     if not video_path or not os.path.exists(video_path):
+        candidates = []
         for f in os.listdir(UPLOAD_DIR):
             full_p = os.path.join(UPLOAD_DIR, f)
-            if os.path.isfile(full_p) and os.path.getsize(full_p) > 100000:
-                video_path = full_p
-                break
+            if os.path.isfile(full_p) and not f.startswith(".") and os.path.getsize(full_p) > 1000:
+                candidates.append(full_p)
+        if candidates:
+            video_path = max(candidates, key=os.path.getmtime)
 
     if not video_path:
         raise HTTPException(status_code=404, detail="No video file available to render captions onto. Please upload a video first.")
@@ -174,4 +216,4 @@ def render_video_endpoint(req: RenderRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

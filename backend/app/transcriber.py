@@ -6,12 +6,20 @@ import subprocess
 import tempfile
 import numpy as np
 import imageio_ffmpeg
-from app.hinglish_engine import (
-    transliterate_devanagari_to_hinglish,
-    enrich_with_emojis,
-    is_urdu_arabic,
-    convert_urdu_to_hindi,
-)
+try:
+    from app.hinglish_engine import (
+        transliterate_devanagari_to_hinglish,
+        enrich_with_emojis,
+        is_urdu_arabic,
+        convert_urdu_to_hindi,
+    )
+except ImportError:
+    from hinglish_engine import (
+        transliterate_devanagari_to_hinglish,
+        enrich_with_emojis,
+        is_urdu_arabic,
+        convert_urdu_to_hindi,
+    )
 
 # Predefined high-quality multilingual sample transcripts
 SAMPLE_TRANSCRIPTS = {
@@ -172,10 +180,11 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
     5. Enriches with viral creator emojis.
     Returns: (words_list, detected_language_code)
     """
+    lang_key = language.lower() if language else "english"
     detected_lang = language if language != "auto" else "english"
 
     if not filepath or not os.path.exists(filepath):
-        return SAMPLE_TRANSCRIPTS.get(language, SAMPLE_TRANSCRIPTS["english"]), detected_lang
+        return SAMPLE_TRANSCRIPTS.get(lang_key, SAMPLE_TRANSCRIPTS["english"]), detected_lang
 
     wav_path = None
     try:
@@ -186,12 +195,12 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
         extract_audio_from_video(filepath, wav_path)
 
         if not os.path.exists(wav_path) or os.path.getsize(wav_path) < 1000:
-            return SAMPLE_TRANSCRIPTS.get(language, SAMPLE_TRANSCRIPTS["english"]), detected_lang
+            return SAMPLE_TRANSCRIPTS.get(lang_key, SAMPLE_TRANSCRIPTS["english"]), detected_lang
 
         # Step 2: Load WAV as float32 numpy array
         audio_data = load_wav_as_float32(wav_path)
         if len(audio_data) < 1600:  # < 0.1s
-            return SAMPLE_TRANSCRIPTS.get(language, SAMPLE_TRANSCRIPTS["english"]), detected_lang
+            return SAMPLE_TRANSCRIPTS.get(lang_key, SAMPLE_TRANSCRIPTS["english"]), detected_lang
 
         # Step 3: Run Faster-Whisper
         model = get_whisper_model()
@@ -244,7 +253,7 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
                             clean_word = convert_urdu_to_hindi(clean_word)
                             detected_lang = "hi"
 
-                        if language == "hinglish":
+                        if lang_key == "hinglish":
                             clean_word = transliterate_devanagari_to_hinglish(clean_word)
                         clean_word = enrich_with_emojis(clean_word)
 
@@ -263,13 +272,6 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
 
     except Exception as e:
         print(f"Faster-Whisper error: {e}")
-        # Ensure we clean up temporary files even on error
-        try:
-            if wav_path and os.path.exists(wav_path):
-                os.remove(wav_path)
-        except:
-            pass
-        raise  # Re-raise the exception to be handled by the caller
     finally:
         if wav_path and os.path.exists(wav_path):
             try:
@@ -278,5 +280,5 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
                 pass
 
     # Fallback to high quality timed sample if no speech was detected
-    fallback = SAMPLE_TRANSCRIPTS.get(language, SAMPLE_TRANSCRIPTS["english"])
+    fallback = SAMPLE_TRANSCRIPTS.get(lang_key, SAMPLE_TRANSCRIPTS["english"])
     return fallback, detected_lang

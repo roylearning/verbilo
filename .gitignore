@@ -16,6 +16,8 @@ dist-ssr/
 build/
 
 # Uploads & Outputs (User files / temporary media)
+uploads/*
+outputs/*
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/outputs/*
