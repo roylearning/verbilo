@@ -6,9 +6,20 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from app.transcriber import transcribe_media
-from app.hinglish_engine import transliterate_devanagari_to_hinglish, transliterate_hinglish_to_devanagari, enrich_with_emojis
-from app.renderer import render_captioned_video
+
+# Add the backend directory to Python path for imports to work properly
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from transcriber import transcribe_media
+from hinglish_engine import (
+    transliterate_devanagari_to_hinglish,
+    transliterate_hinglish_to_devanagari,
+    enrich_with_emojis,
+    is_urdu_arabic,
+    convert_urdu_to_hindi,
+)
+from renderer import render_captioned_video
 
 app = FastAPI(title="Verbilo AI Engine API", description="AI Multilingual Auto-Caption API for Indian Creators")
 

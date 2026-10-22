@@ -263,6 +263,13 @@ def transcribe_media(filepath: str, language: str = "auto") -> tuple[list[dict],
 
     except Exception as e:
         print(f"Faster-Whisper error: {e}")
+        # Ensure we clean up temporary files even on error
+        try:
+            if wav_path and os.path.exists(wav_path):
+                os.remove(wav_path)
+        except:
+            pass
+        raise  # Re-raise the exception to be handled by the caller
     finally:
         if wav_path and os.path.exists(wav_path):
             try:
